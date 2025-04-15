@@ -2,7 +2,7 @@
 const { spawn } = require('child_process');
 
 function run() {
-  spawn("node server.js", {
+  const child = spawn("node server.js", {
     cwd: __dirname,
     stdio: "inherit",
     shell: true
