@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Smart QI Quiz</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
@@ -18,6 +18,19 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .question-container {
+      margin-top: 20px;
+    }
+    .options {
+      margin-top: 10px;
+    }
+    .options button {
+      margin-right: 10px;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+    }
     pre {
       margin-top: 20px;
       background-color: #f4f4f4;
@@ -28,22 +41,58 @@
   </style>
 </head>
 <body>
-
   <h1>Smart QI Quiz AI</h1>
-  <button onclick="buatSoalQuiz()">Buat Soal Quiz</button>
-
+  <button onclick="loadQuestion()">Tampilkan Soal Quiz</button>
   <pre id="outputQuiz">Klik tombol di atas untuk membuat soal quiz dari AI.</pre>
 
+  <div id="quizContainer" class="question-container" style="display: none;">
+    <p id="question"></p>
+    <div id="options" class="options">
+      <button id="optionA" onclick="checkAnswer('A')">A</button>
+      <button id="optionB" onclick="checkAnswer('B')">B</button>
+      <button id="optionC" onclick="checkAnswer('C')">C</button>
+    </div>
+    <div id="result" class="result"></div>
+  </div>
+
   <script>
-    async function buatSoalQuiz() {
+    let correctAnswer = '';
+    
+    async function loadQuestion() {
+      try {
+        const { data } = await axios.get('/questions');
+        
+        // Pilih soal acak dari data yang ada
+        if (data.length > 0) {
+          const randomQuestion = data[Math.floor(Math.random() * data.length)];
+          
+          const soal = randomQuestion.soal;
+          const A = randomQuestion.A;
+          const B = randomQuestion.B;
+          const C = randomQuestion.C;
+          correctAnswer = randomQuestion.Jawaban;
+
+          // Menampilkan soal dan pilihan
+          showQuiz(soal, A, B, C);
+        } else {
+          document.getElementById("outputQuiz").textContent = "Belum ada soal yang disimpan.";
+        }
+      } catch (err) {
+        document.getElementById("outputQuiz").textContent = "Gagal mengambil soal.";
+        console.error("Error:", err);
+      }
+      createQuiz();
+    }
+
+    async function createQuiz() {
       const prompt = `
 Buatkan 1 soal quiz pengetahuan umum dengan 3 pilihan jawaban A, B, dan C. Sertakan jawaban yang benar di akhir.
 Format:
-Soal: ...
-A. ...
-B. ...
-C. ...
-Jawaban: ...
+Soal: **...**
+A. **...**
+B. **...**
+C. **...**
+Jawaban: **...**
 `;
 
       try {
@@ -51,14 +100,68 @@ Jawaban: ...
           `https://api-rangestudio.vercel.app/api/gemini?text=${encodeURIComponent(prompt)}`
         );
         const response = data.answer;
-        document.getElementById("outputQuiz").textContent = response;
+
+        //document.getElementById("outputQuiz").textContent = response;
+
+        // Ambil semua isi dari tanda **...**
+        const match = [...response.matchAll(/\*\*(.*?)\*\*/g)].map(m => m[1]);
+
+        // Validasi jumlah bagian
+        if (match.length >= 5) {
+          const soal = match[0];
+          const A = match[1];
+          const B = match[2];
+          const C = match[3];
+          correctAnswer = match[4];
+
+          // Simpan soal ke server
+          const dataToSend = {
+            soal: soal,
+            A: A,
+            B: B,
+            C: C,
+            Jawaban: correctAnswer
+          };
+
+          // Kirim ke server
+          axios.post('/save', dataToSend)
+            .then(response => {
+              //alert(response.data.message);
+              //showQuiz(soal, A, B, C);
+            })
+            .catch(error => {
+              console.error("Gagal mengirim:", error);
+              alert("Gagal menyimpan ke server.");
+            });
+        } else {
+          console.warn("Format tidak lengkap atau tidak ditemukan.");
+          alert("Format soal tidak valid.");
+        }
       } catch (err) {
         document.getElementById("outputQuiz").textContent = "Gagal mengambil soal dari AI.";
         console.error("Error:", err);
       }
     }
-  </script>
 
+    // Menampilkan soal dan pilihan ke UI
+    function showQuiz(soal, A, B, C) {
+      document.getElementById("question").textContent = soal;
+      document.getElementById("optionA").textContent = `A. ${A}`;
+      document.getElementById("optionB").textContent = `B. ${B}`;
+      document.getElementById("optionC").textContent = `C. ${C}`;
+      document.getElementById("quizContainer").style.display = "block";
+    }
+
+    // Memeriksa jawaban
+    function checkAnswer(selectedOption) {
+      if (selectedOption === correctAnswer) {
+        document.getElementById("result").textContent = "Jawaban Anda benar!";
+        document.getElementById("result").style.color = "green";
+      } else {
+        document.getElementById("result").textContent = "Jawaban Anda salah!";
+        document.getElementById("result").style.color = "red";
+      }
+    }
+  </script>
 </body>
 </html>
-
