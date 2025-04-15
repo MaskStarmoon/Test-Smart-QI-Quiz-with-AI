@@ -19,6 +19,16 @@ app.post('/save', (req, res) => {
   }
 });
 
+app.get('/questions', (req, res) => {
+  try {
+    const data = JSON.parse(fs.readFileSync("database/dataQuest.json", 'utf8') || '[]');
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Gagal mengambil soal." });
+  }
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, "SQQ", "index.html"));
 });
