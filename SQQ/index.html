@@ -1,1 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart QI Quiz</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    pre {
+      margin-top: 20px;
+      background-color: #f4f4f4;
+      padding: 15px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Smart QI Quiz AI</h1>
+  <button onclick="buatSoalQuiz()">Buat Soal Quiz</button>
+
+  <pre id="outputQuiz">Klik tombol di atas untuk membuat soal quiz dari AI.</pre>
+
+  <script>
+    async function buatSoalQuiz() {
+      const prompt = `
+Buatkan 1 soal quiz pengetahuan umum dengan 3 pilihan jawaban A, B, dan C. Sertakan jawaban yang benar di akhir.
+Format:
+Soal: ...
+A. ...
+B. ...
+C. ...
+Jawaban: ...
+`;
+
+      try {
+        const { data } = await axios.get(
+          `https://api-rangestudio.vercel.app/api/gemini?text=${encodeURIComponent(prompt)}`
+        );
+        const response = data.answer;
+        document.getElementById("outputQuiz").textContent = response;
+      } catch (err) {
+        document.getElementById("outputQuiz").textContent = "Gagal mengambil soal dari AI.";
+        console.error("Error:", err);
+      }
+    }
+  </script>
+
+</body>
+</html>
 
